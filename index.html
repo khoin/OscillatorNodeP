@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>OscillatorNode</title>
+</head>
+<body>
+OscillatorNode with phase AudioParam
+<br>
+Sine only.
+
+<button id=badd>add oscillator</button> 
+<br>
+<div id=dinfo>
+	<div>
+		<li>Frequency <input type="number" min="0" scale="1" max="14000" value=440></li>
+		<li>Detune <input type="number" min="-9999" scale="1" max="9999" value=0></li>
+		<li>Phase <input type="number" min="0" max="100" scale="0.0628318530" value=0>2pi/100</li>
+		<button>remove</button>
+		<hr>
+	</div>
+</div>
+
+<script>
+const aC = new AudioContext();
+let oscs = [];
+let template = dinfo.children[0].cloneNode(true);
+
+dinfo.innerHTML = '';
+
+Promise.all([
+	aC.audioWorklet.addModule('OscillatorNodeP.js')
+]).then(_ => {
+	let g = aC.createGain();
+	g.gain.value = 0.1;
+	g.connect(aC.destination);
+
+	badd.onclick = e => {
+		let o = new AudioWorkletNode(aC, 'OscillatorNodeP', {outputChannelCount: [1]});
+		oscs.push(o);
+		o.connect(g);
+
+		let ctl = template.cloneNode(true);
+		["frequency", "detune", "phase"].forEach((p,i) => {
+			ctl.children[i].children[0].onchange = e => o.parameters.get(p).value = e.target.value * parseFloat(e.target.getAttribute("scale"));
+		});
+
+		dinfo.appendChild(ctl);
+	}
+});
+</script>
+</body>
+</html>
